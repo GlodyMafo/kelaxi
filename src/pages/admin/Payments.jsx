@@ -7,7 +7,6 @@ import { GrMoney } from "react-icons/gr";
 import { AiOutlineSchedule } from "react-icons/ai";
 import { GiArtificialHive } from "react-icons/gi";
 
-
 import {
   VictoryChart,
   VictoryLine,
@@ -62,6 +61,9 @@ export default function FinanceDashboardVictory() {
     libelle: "", montant: "", categorie: categories[3], date: ""
   });
 
+  // Filtre mois
+  const [filterMonth, setFilterMonth] = useState("all");
+
   // Helpers
   const formatCurrency = (n) => `${Number(n || 0).toLocaleString()} USD`;
 
@@ -94,6 +96,11 @@ export default function FinanceDashboardVictory() {
     });
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month));
   }, [flux, payments]);
+
+  const filteredSeries = useMemo(() => {
+    if (filterMonth === "all") return series;
+    return series.filter((s) => s.month === filterMonth);
+  }, [series, filterMonth]);
 
   const expenseByCategory = useMemo(() => {
     const sums = {};
@@ -146,14 +153,13 @@ export default function FinanceDashboardVictory() {
     const wb = XLSX.utils.book_new();
     const paymentsSheet = XLSX.utils.json_to_sheet(payments);
     XLSX.utils.book_append_sheet(wb, paymentsSheet, "Paiements");
-    // Prepare expenses sheet from flux.sorties
     const expenses = flux.sorties.map(s => ({ libelle: s.libelle, categorie: s.categorie, montant: s.montant, date: s.date }));
     const expensesSheet = XLSX.utils.json_to_sheet(expenses);
     XLSX.utils.book_append_sheet(wb, expensesSheet, "Dépenses");
     XLSX.writeFile(wb, "flux_financiers.xlsx");
   };
 
-  // Export PDF (simple style): payments then expenses
+  // Export PDF (payments then expenses)
   const exportPdfBoth = () => {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const marginLeft = 40;
@@ -164,25 +170,19 @@ export default function FinanceDashboardVictory() {
     doc.setFontSize(11);
     doc.text(`Généré le : ${new Date().toLocaleString()}`, marginLeft, y);
     y += 20;
-
-    // Totals
     doc.setFontSize(12);
     doc.text(`Totaux — Entrées: ${formatCurrency(totalEntrees)}  |  Sorties: ${formatCurrency(totalSorties)}  |  Solde: ${formatCurrency(gainNet)}`, marginLeft, y);
     y += 26;
-
-    // Section Paiements
     doc.setFontSize(13);
     doc.text("1) Paiements", marginLeft, y);
     y += 16;
     doc.setFontSize(10);
-    // header
     doc.text("Date", marginLeft, y);
     doc.text("Nom", marginLeft + 70, y);
     doc.text("Type", marginLeft + 240, y);
     doc.text("Montant", marginLeft + 360, y);
     doc.text("Statut", marginLeft + 440, y);
     y += 10;
-
     payments.forEach((p, i) => {
       if (y > 750) { doc.addPage(); y = 40; }
       y += 18;
@@ -192,8 +192,6 @@ export default function FinanceDashboardVictory() {
       doc.text(String(p.montant || "-"), marginLeft + 360, y);
       doc.text(String(p.statut || "-"), marginLeft + 440, y);
     });
-
-    // New page for expenses
     doc.addPage();
     y = 40;
     doc.setFontSize(13);
@@ -205,7 +203,6 @@ export default function FinanceDashboardVictory() {
     doc.text("Catégorie", marginLeft + 280, y);
     doc.text("Montant", marginLeft + 420, y);
     y += 8;
-
     flux.sorties.forEach((s) => {
       if (y > 750) { doc.addPage(); y = 40; }
       y += 18;
@@ -214,14 +211,12 @@ export default function FinanceDashboardVictory() {
       doc.text(String(s.categorie || "-"), marginLeft + 280, y);
       doc.text(String(s.montant || "-"), marginLeft + 420, y);
     });
-
     doc.save("rapport_flux_financiers.pdf");
   };
 
   // Print / export receipt for selectedPayment
   const handlePrintReceipt = async () => {
     if (!selectedPayment) return;
-    // create a PDF with payment details and the QR image.
     const doc = new jsPDF();
     doc.setFontSize(14);
     doc.text("École - Reçu de Paiement", 20, 30);
@@ -232,44 +227,28 @@ export default function FinanceDashboardVictory() {
     doc.text(`Type : ${selectedPayment.type}`, 20, 100);
     doc.text(`Montant : ${selectedPayment.montant} USD`, 20, 115);
     doc.text(`Date : ${selectedPayment.date}`, 20, 130);
-
-    // Convert SVG QR (rendered by QRCodeSVG) to image and add to PDF
     try {
       const qrSvg = document.getElementById("receipt-qr");
       if (qrSvg && qrSvg.outerHTML) {
         const svgString = qrSvg.outerHTML;
-        // create image from svg string
         const img = new Image();
         const svg64 = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgString);
-        await new Promise((resolve, reject) => {
+        await new Promise((resolve) => {
           img.onload = () => resolve();
-          img.onerror = () => resolve(); // even if fails, proceed without QR
+          img.onerror = () => resolve();
           img.src = svg64;
         });
-        // draw to a canvas to get PNG dataURL
         const canvas = document.createElement("canvas");
         canvas.width = 200;
         canvas.height = 200;
         const ctx = canvas.getContext("2d");
-        // fill white background (SVG may be transparent)
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // draw image (may fail in some browsers for data-uri SVG cross-origin — best-effort)
-        try { ctx.drawImage(document.querySelector("#receipt-qr"), 0, 0, 200, 200); } catch (e) {
-          // fallback: draw Image we loaded from svg data
-          try { ctx.drawImage(img, 0, 0, 200, 200); } catch (err) { /* ignore */ }
-        }
-        try {
-          const dataURL = canvas.toDataURL("image/png");
-          doc.addImage(dataURL, "PNG", 350, 40, 200, 200);
-        } catch (e) {
-          // ignore QR if can not be converted
-        }
+        try { ctx.drawImage(document.querySelector("#receipt-qr"), 0, 0, 200, 200); } catch {}
+        try { ctx.drawImage(img, 0, 0, 200, 200); } catch {}
+        try { const dataURL = canvas.toDataURL("image/png"); doc.addImage(dataURL, "PNG", 350, 40, 200, 200); } catch {}
       }
-    } catch (e) {
-      console.warn("QR to image conversion failed:", e);
-    }
-
+    } catch {}
     doc.setFontSize(10);
     doc.text("Signature : ______________________", 20, 180);
     doc.save(`Recu_${selectedPayment.id || "0"}.pdf`);
@@ -304,38 +283,62 @@ export default function FinanceDashboardVictory() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-
-
         <StatCard title="Scolarité" value={formatCurrency(revenusRecus)} icon={<PiStudent />} />
         <StatCard title="Scolarité Impayé" value={formatCurrency(revenusImpayes)} icon={<PiChalkboardTeacherFill />} />
         <StatCard title="Total Entrées" value={formatCurrency(totalEntrees)} icon={<GrMoney />} />
         <StatCard title="Gain Net" value={formatCurrency(gainNet)} icon={<AiOutlineSchedule />} />
-
-
       </div>
 
       {/* Charts */}
       <div className="flex gap-8">
         <div className="bg-white p-4 rounded-2xl shadow w-[70%]">
-          <h3 className="font-semibold mb-2">Évolution mensuelle (Entrées vs Sorties)</h3>
-          <VictoryChart theme={VictoryTheme.material}
-            height={265}
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-semibold">Évolution mensuelle (Entrées vs Sorties)</h3>
+            <select
+              className="border rounded px-2 py-1"
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+            >
+              <option value="all">Tous les mois</option>
+              {series.map((s) => (
+                <option key={s.month} value={s.month}>
+                  {s.month}
+                </option>
+              ))}
+            </select>
+          </div>
+          <VictoryChart
+            theme={VictoryTheme.material}
+            height={250}
             width={450}
             domainPadding={{ x: 30, y: 5 }}
-            padding={{ top: 10, bottom: 40, left: 40, right: 25 }}>
-            <VictoryLegend x={100} y={10} orientation="horizontal" gutter={20}
-              data={[{ name: "Entrées", symbol: { fill: "#1A2F6B" } }, { name: "Sorties", symbol: { fill: "#00C4D9" } }]} />
-            <VictoryAxis label="Mois" style={{ axisLabel: { padding: 30 } }} />
-            <VictoryAxis dependentAxis label="Montant (USD)" style={{ axisLabel: { padding: 40 } }} />
+            padding={{ top: 10, bottom: 40, left: 75, right: 25 }}
+          >
+            <VictoryLegend
+              x={100}
+              y={10}
+              orientation="horizontal"
+              gutter={20}
+              data={[
+                { name: "Entrées", symbol: { fill: "#1A2F6B" } },
+                { name: "Sorties", symbol: { fill: "#00C4D9" } },
+              ]}
+            />
+            <VictoryAxis label="" style={{ axisLabel: { padding: 30 } }} />
+            <VictoryAxis
+              dependentAxis
+              label="Montant (USD)"
+              style={{ axisLabel: { padding: 60 } }}
+            />
             <VictoryLine
-              data={series.map(s => ({ x: s.month, y: s.entrees }))}
+              data={filteredSeries.map((s) => ({ x: s.month, y: s.entrees }))}
               interpolation="monotoneX"
               style={{ data: { stroke: "#1A2F6B", strokeWidth: 3 } }}
               labels={({ datum }) => `${datum.y} USD`}
               labelComponent={<VictoryTooltip />}
             />
             <VictoryLine
-              data={series.map(s => ({ x: s.month, y: s.sorties }))}
+              data={filteredSeries.map((s) => ({ x: s.month, y: s.sorties }))}
               interpolation="monotoneX"
               style={{ data: { stroke: "#00C4D9", strokeWidth: 3 } }}
               labels={({ datum }) => `${datum.y} USD`}
@@ -344,7 +347,7 @@ export default function FinanceDashboardVictory() {
           </VictoryChart>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl shadow">
+        <div className="bg-white p-4 rounded-2xl shadow w-[30%]">
           <h3 className="font-semibold mb-2">Répartition des dépenses</h3>
           <VictoryPie
             data={expenseByCategory}
@@ -358,45 +361,32 @@ export default function FinanceDashboardVictory() {
         </div>
       </div>
 
-      {/* Payments table */}
+      {/* Tableaux Paiements */}
       <div className="bg-white p-4 rounded-2xl shadow">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="font-semibold">Paiements</h3>
-        </div>
-        <div className="overflow-auto">
-          <table className="w-full text-left border-collapse">
+        <h3 className="font-semibold mb-2">Paiements</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border">
             <thead>
-              <tr className="bg-[#1A2F6B] text-white">
-                <th className="p-2 pl-4">Date</th>
-                <th>Nom</th>
-                <th>Matricule</th>
-                <th>Classe</th>
-                <th>Type</th>
-                <th>Montant</th>
-                <th>Statut</th>
-                <th>Reçu</th>
+              <tr className="bg-gray-100 text-left">
+                <th className="px-4 py-2 border">Nom</th>
+                <th className="px-4 py-2 border">Matricule</th>
+                <th className="px-4 py-2 border">Classe</th>
+                <th className="px-4 py-2 border">Type</th>
+                <th className="px-4 py-2 border">Montant</th>
+                <th className="px-4 py-2 border">Statut</th>
+                <th className="px-4 py-2 border">Date</th>
               </tr>
             </thead>
             <tbody>
               {payments.map(p => (
-                <tr key={p.id} className="border-t hover:bg-gray-50">
-                  <td className="p-2">{p.date}</td>
-                  <td>{p.name}</td>
-                  <td>{p.matricule}</td>
-                  <td>{p.classe}</td>
-                  <td>{p.type}</td>
-                  <td>{formatCurrency(p.montant)}</td>
-                  <td className={p.statut === "Payé" ? "text-green-600" : "text-red-600"}>{p.statut}</td>
-                  <td>
-                    {p.statut === "Payé" ? (
-                      <button
-                        onClick={() => { setSelectedPayment(p); setShowReceipt(true); }}
-                        className="text-blue-600 underline"
-                      >
-                        Voir reçu
-                      </button>
-                    ) : <span className="text-gray-500">—</span>}
-                  </td>
+                <tr key={p.id} className="border-b hover:bg-gray-50">
+                  <td className="px-4 py-2 border">{p.name}</td>
+                  <td className="px-4 py-2 border">{p.matricule}</td>
+                  <td className="px-4 py-2 border">{p.classe}</td>
+                  <td className="px-4 py-2 border">{p.type}</td>
+                  <td className="px-4 py-2 border">{p.montant}</td>
+                  <td className="px-4 py-2 border">{p.statut}</td>
+                  <td className="px-4 py-2 border">{p.date}</td>
                 </tr>
               ))}
             </tbody>
@@ -404,26 +394,26 @@ export default function FinanceDashboardVictory() {
         </div>
       </div>
 
-      {/* Expenses table */}
+      {/* Tableaux Dépenses */}
       <div className="bg-white p-4 rounded-2xl shadow">
         <h3 className="font-semibold mb-2">Dépenses</h3>
-        <div className="overflow-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto">
+          <table className="min-w-full border">
             <thead>
-              <tr className="bg-[#1A2F6B] text-white">
-                <th className="p-2">Date</th>
-                <th>Libellé</th>
-                <th>Catégorie</th>
-                <th>Montant</th>
+              <tr className="bg-gray-100 text-left">
+                <th className="px-4 py-2 border">Libellé</th>
+                <th className="px-4 py-2 border">Catégorie</th>
+                <th className="px-4 py-2 border">Montant</th>
+                <th className="px-4 py-2 border">Date</th>
               </tr>
             </thead>
             <tbody>
               {flux.sorties.map(s => (
-                <tr key={s.id} className="border-t hover:bg-gray-50">
-                  <td className="p-2">{s.date}</td>
-                  <td>{s.libelle}</td>
-                  <td>{s.categorie}</td>
-                  <td>{formatCurrency(s.montant)}</td>
+                <tr key={s.id} className="border-b hover:bg-gray-50">
+                  <td className="px-4 py-2 border">{s.libelle}</td>
+                  <td className="px-4 py-2 border">{s.categorie}</td>
+                  <td className="px-4 py-2 border">{s.montant}</td>
+                  <td className="px-4 py-2 border">{s.date}</td>
                 </tr>
               ))}
             </tbody>
@@ -431,69 +421,57 @@ export default function FinanceDashboardVictory() {
         </div>
       </div>
 
-      {/* Payment Modal */}
+      {/* Modales */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg w-[420px]">
-            <h2 className="text-xl font-semibold mb-4">Nouveau Paiement</h2>
-            <input placeholder="Nom" className="w-full border p-2 rounded mb-2" value={newPayment.name} onChange={e => setNewPayment({ ...newPayment, name: e.target.value })} />
-            <input placeholder="Matricule" className="w-full border p-2 rounded mb-2" value={newPayment.matricule} onChange={e => setNewPayment({ ...newPayment, matricule: e.target.value })} />
-            <input placeholder="Classe" className="w-full border p-2 rounded mb-2" value={newPayment.classe} onChange={e => setNewPayment({ ...newPayment, classe: e.target.value })} />
-            <select className="w-full border p-2 rounded mb-2" value={newPayment.type} onChange={e => setNewPayment({ ...newPayment, type: e.target.value })}>
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <input placeholder="Montant" type="number" className="w-full border p-2 rounded mb-2" value={newPayment.montant} onChange={e => setNewPayment({ ...newPayment, montant: e.target.value })} />
-            <input type="date" className="w-full border p-2 rounded mb-2" value={newPayment.date} onChange={e => setNewPayment({ ...newPayment, date: e.target.value })} />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowPaymentModal(false)} className="bg-gray-300 px-3 py-1 rounded">Annuler</button>
-              <button onClick={handleAddPayment} className="bg-blue-600 text-white px-3 py-1 rounded">Valider</button>
+        <div className="fixed inset-0 flex justify-center items-center z-50 bg-black bg-opacity-30">
+          <div className="bg-white p-6 rounded-2xl shadow w-96">
+            <h3 className="font-semibold text-lg mb-4">Nouveau Paiement</h3>
+            <div className="flex flex-col gap-2">
+              <input className="border px-2 py-1 rounded" placeholder="Nom" value={newPayment.name} onChange={e => setNewPayment({...newPayment, name: e.target.value})} />
+              <input className="border px-2 py-1 rounded" placeholder="Matricule" value={newPayment.matricule} onChange={e => setNewPayment({...newPayment, matricule: e.target.value})} />
+              <input className="border px-2 py-1 rounded" placeholder="Classe" value={newPayment.classe} onChange={e => setNewPayment({...newPayment, classe: e.target.value})} />
+              <select className="border px-2 py-1 rounded" value={newPayment.type} onChange={e => setNewPayment({...newPayment, type: e.target.value})}>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <input type="number" className="border px-2 py-1 rounded" placeholder="Montant" value={newPayment.montant} onChange={e => setNewPayment({...newPayment, montant: e.target.value})} />
+              <input type="date" className="border px-2 py-1 rounded" value={newPayment.date} onChange={e => setNewPayment({...newPayment, date: e.target.value})} />
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button className="px-4 py-2 rounded bg-gray-200" onClick={() => setShowPaymentModal(false)}>Annuler</button>
+              <button className="px-4 py-2 rounded bg-[#233e87] text-white" onClick={handleAddPayment}>Ajouter</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Expense Modal */}
       {showExpenseModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg w-[420px]">
-            <h2 className="text-xl font-semibold mb-4">Nouvelle Dépense</h2>
-            <input placeholder="Libellé" className="w-full border p-2 rounded mb-2" value={newExpense.libelle} onChange={e => setNewExpense({ ...newExpense, libelle: e.target.value })} />
-            <select className="w-full border p-2 rounded mb-2" value={newExpense.categorie} onChange={e => setNewExpense({ ...newExpense, categorie: e.target.value })}>
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <input placeholder="Montant" type="number" className="w-full border p-2 rounded mb-2" value={newExpense.montant} onChange={e => setNewExpense({ ...newExpense, montant: e.target.value })} />
-            <input type="date" className="w-full border p-2 rounded mb-2" value={newExpense.date} onChange={e => setNewExpense({ ...newExpense, date: e.target.value })} />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowExpenseModal(false)} className="bg-gray-300 px-3 py-1 rounded">Annuler</button>
-              <button onClick={handleAddExpense} className="bg-red-600 text-white px-3 py-1 rounded">Valider</button>
+        <div className="fixed inset-0 flex justify-center items-center z-50 bg-black bg-opacity-30">
+          <div className="bg-white p-6 rounded-2xl shadow w-96">
+            <h3 className="font-semibold text-lg mb-4">Nouvelle Dépense</h3>
+            <div className="flex flex-col gap-2">
+              <input className="border px-2 py-1 rounded" placeholder="Libellé" value={newExpense.libelle} onChange={e => setNewExpense({...newExpense, libelle: e.target.value})} />
+              <select className="border px-2 py-1 rounded" value={newExpense.categorie} onChange={e => setNewExpense({...newExpense, categorie: e.target.value})}>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <input type="number" className="border px-2 py-1 rounded" placeholder="Montant" value={newExpense.montant} onChange={e => setNewExpense({...newExpense, montant: e.target.value})} />
+              <input type="date" className="border px-2 py-1 rounded" value={newExpense.date} onChange={e => setNewExpense({...newExpense, date: e.target.value})} />
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button className="px-4 py-2 rounded bg-gray-200" onClick={() => setShowExpenseModal(false)}>Annuler</button>
+              <button className="px-4 py-2 rounded bg-red-600 text-white" onClick={handleAddExpense}>Ajouter</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Receipt Modal */}
+      {/* Receipt */}
       {showReceipt && selectedPayment && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg w-[420px] relative text-center">
-            <h2 className="text-xl font-semibold mb-2">Reçu de Paiement</h2>
-            <p><strong>Nom :</strong> {selectedPayment.name}</p>
-            <p><strong>Matricule :</strong> {selectedPayment.matricule || "-"}</p>
-            <p><strong>Classe :</strong> {selectedPayment.classe || "-"}</p>
-            <p><strong>Type :</strong> {selectedPayment.type}</p>
-            <p><strong>Montant :</strong> {formatCurrency(selectedPayment.montant)}</p>
-            <p><strong>Date :</strong> {selectedPayment.date}</p>
-
-            <div className="flex justify-center my-3">
-              {/* QR svg (we will try convert svg to image for PDF) */}
-              <QRCodeSVG id="receipt-qr" value={`Recu|${selectedPayment.id}|${selectedPayment.matricule || ""}|${selectedPayment.montant}|${selectedPayment.date}`} size={120} />
-            </div>
-
-            <div className="flex justify-center gap-2 mt-3">
-              <button onClick={handlePrintReceipt} className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2">
-                <FaPrint /> Imprimer / Télécharger PDF
-              </button>
-              <button onClick={() => { setShowReceipt(false); setSelectedPayment(null); }} className="bg-gray-300 px-4 py-2 rounded">Fermer</button>
-            </div>
+        <div className="fixed inset-0 flex justify-center items-center z-50 bg-black bg-opacity-30">
+          <div className="bg-white p-6 rounded-2xl shadow w-96 flex flex-col items-center gap-4">
+            <h3 className="font-semibold text-lg mb-2">Reçu de Paiement</h3>
+            <QRCodeSVG id="receipt-qr" value={`Paiement-${selectedPayment.id}`} size={128} />
+            <button className="px-4 py-2 rounded bg-[#233e87] text-white" onClick={handlePrintReceipt}>Imprimer</button>
+            <button className="px-4 py-2 rounded bg-gray-200" onClick={() => setShowReceipt(false)}>Fermer</button>
           </div>
         </div>
       )}
