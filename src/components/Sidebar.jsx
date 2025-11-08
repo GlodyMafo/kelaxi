@@ -31,7 +31,7 @@ export default function Sidebar() {
                 }`
               }
             >
-              <FaTachometerAlt /> Dashboard
+              <FaTachometerAlt /> Tableau de bord
             </NavLink>
           </li>
 
@@ -46,7 +46,7 @@ export default function Sidebar() {
                 }`
               }
             >
-              <FaPeopleGroup /> Students
+              <FaPeopleGroup /> Étudiants
             </NavLink>
           </li>
 
@@ -61,7 +61,7 @@ export default function Sidebar() {
                 }`
               }
             >
-              <GiTeacher /> Teachers
+              <GiTeacher /> Enseignants
             </NavLink>
           </li>
 
@@ -76,7 +76,7 @@ export default function Sidebar() {
                 }`
               }
             >
-              <AiOutlineSchedule /> Attendance
+              <AiOutlineSchedule /> Présences
             </NavLink>
           </li>
 
@@ -91,7 +91,7 @@ export default function Sidebar() {
                 }`
               }
             >
-              <GrMoney /> Finance <IoIosArrowForward className="ml-4" />
+              <GrMoney /> Finances <IoIosArrowForward className="ml-4" />
             </NavLink>
           </li>
 
@@ -106,7 +106,7 @@ export default function Sidebar() {
                 }`
               }
             >
-              <BiCalendar /> Calendar
+              <BiCalendar /> Calendrier
             </NavLink>
           </li>
 
@@ -121,7 +121,7 @@ export default function Sidebar() {
                 }`
               }
             >
-              <IoLibraryOutline /> Library
+              <IoLibraryOutline /> Bibliothèque
             </NavLink>
           </li>
 
@@ -136,7 +136,7 @@ export default function Sidebar() {
                 }`
               }
             >
-              <MdOutlineMessage /> Message
+              <MdOutlineMessage /> Messages
             </NavLink>
           </li>
 
@@ -151,7 +151,7 @@ export default function Sidebar() {
                 }`
               }
             >
-              <IoSettingsOutline /> Setting
+              <IoSettingsOutline /> Paramètres
             </NavLink>
           </li>
 
@@ -166,7 +166,7 @@ export default function Sidebar() {
                 }`
               }
             >
-              <RiLogoutCircleLine /> Logout
+              <RiLogoutCircleLine /> Déconnexion
             </NavLink>
           </li>
         </ul>
