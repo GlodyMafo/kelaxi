@@ -109,7 +109,7 @@ export default function Attendance() {
       {/* --- Filtres --- */}
      <div className="flex justify-center items-center gap-2 mb-3">
           <div className="flex items-center gap-3 bg-white px-3 py-2 rounded-xl shadow">
-                      <img src="../public/les-niveaux.png" alt="Niveaux" className="w-6 h-6" />
+                      <img src="/les-niveaux.png" alt="Niveaux" className="w-6 h-6" />
 
           <select
             value={selectedClass}
