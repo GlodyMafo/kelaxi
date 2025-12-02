@@ -15,7 +15,7 @@ export default function Login() {
       {/* Arrière-plan image + overlay sombre */}
       <div className="absolute inset-0">
         <img
-          src="../public/student_bg.png"
+          src="/student_bg.png"
           alt="Background"
           className="w-full h-full object-cover"
         />
@@ -32,7 +32,7 @@ export default function Login() {
         {/* Logo */}
         <div className="flex justify-center mb-5">
           <img
-            src="../public/logo.png"
+            src="/logo.png"
             alt="Logo"
             className="w-60"
           />
