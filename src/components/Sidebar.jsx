@@ -15,7 +15,7 @@ export default function Sidebar() {
   return (
     <aside className="w-48 bg-white shadow-sm m-2 rounded-2xl">
       <div className="pl-8 pt-8 font-bold text-xl">
-        <img src="../public/logo.png" alt="kelaxi" className="w-24" />
+        <img src="/logo.png" alt="kelaxi" className="w-24" />
       </div>
 
       <nav className="p-4 pl-8 text-sm">

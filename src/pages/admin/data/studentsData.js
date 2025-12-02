@@ -8,7 +8,7 @@ const studentsData = [
     percentage: 84,
     parentContact: "+243 829331002",
     fichiers: ["bulletin1.pdf", "trimestre1.pdf"],
-    photos: ["../public/deo.jpg"], // ✅ vient de public
+    photos: [""], // ✅ vient de public
     palmares: ["2e de la classe", "Prix de bonne conduite"],
   },
   {
@@ -18,7 +18,7 @@ const studentsData = [
     percentage: 79,
     parentContact: "+243 826103987",
     fichiers: ["bulletin2.pdf"],
-    photos: ["../public/mya.jpg"], // ✅ vient de public
+    photos: [""], // ✅ vient de public
     palmares: ["4e de la classe"],
   },
   {

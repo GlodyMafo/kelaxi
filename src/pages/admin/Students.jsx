@@ -58,7 +58,7 @@ export default function Students() {
 
         <div className="flex justify-center items-center gap-2">
           <div className="flex items-center gap-3 bg-white px-3 py-2 rounded-xl shadow">
-            <img src="../public/les-niveaux.png" alt="Niveaux" className="w-6 h-6" />
+            <img src="/les-niveaux.png" alt="Niveaux" className="w-6 h-6" />
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
@@ -92,7 +92,7 @@ export default function Students() {
             }`}
           >
             <img
-              src="../public/employe.png"
+              src="/employe.png"
               alt="level"
               className={`w-6 h-6 transition duration-300 ${
                 sortOption === "excellence"

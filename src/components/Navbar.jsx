@@ -15,7 +15,7 @@ export default function Navbar() {
   const defaultUser = {
     name: "Glody Mafo",
     role: "Promoteur",
-    photo: "../public/WhatsApp Image 2025-11-04 at 11.08.03_c86b3171.jpg",
+    photo: "/WhatsApp Image 2025-11-04 at 11.08.03_c86b3171.jpg",
   };
 
   // 👤 --- Utilisateur actif : soit celui du contexte, soit le mock
