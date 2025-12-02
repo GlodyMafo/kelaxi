@@ -86,10 +86,10 @@ export default function Dashboard() {
 
 
   const events = [
-    { date: "2025-10-30", time: "08:00", title: "Réunion des enseignants" },
-    { date: "2025-10-30", time: "10:00", title: "Cours de Mathématiques - 4A" },
-    { date: "2025-10-30", time: "09:00", title: "Visite du Directeur" },
-    { date: "2025-10-30", time: "14:00", title: "Atelier de Sciences" },
+    { date: "2025-11-08", time: "08:00", title: "Réunion des enseignants" },
+    { date: "2025-11-08", time: "10:00", title: "Cours de Mathématiques - 4A" },
+    { date: "2025-11-08", time: "09:00", title: "Visite du Directeur" },
+    { date: "2025-11-08", time: "14:00", title: "Atelier de Sciences" },
   ];
 
   const formattedDate = format(selectedDate, "yyyy-MM-dd");

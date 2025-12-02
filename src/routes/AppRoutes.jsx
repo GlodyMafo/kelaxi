@@ -10,7 +10,12 @@ import Teachers from "../pages/admin/Teachers";
 import TeacherDetails from "../pages/admin/TeacherDetails";
 import Attendance from "../pages/admin/Attendance";
 import Payments from "../pages/admin/Payments";
+import Calendar from "../pages/admin/Calendar";
+import Bibliotheque from "../pages/admin/Bibliotheque";
+import Message from "../pages/admin/Message";
+import Parametre from "../pages/admin/Parametre";
 import Login from "../components/Login";
+
 
 export default function AppRoutes() {
   return (
@@ -31,6 +36,10 @@ export default function AppRoutes() {
         <Route path="teachers/:id" element={<TeacherDetails />} />
         <Route path="attendance" element={<Attendance />} />
         <Route path="payments" element={<Payments />} />
+         <Route path="calendar" element={<Calendar />} />
+          <Route path="library" element={<Bibliotheque />} />
+           <Route path="messages" element={<Message />} />
+            <Route path="settings" element={<Parametre />} />
       </Route>
     </Routes>
   );
