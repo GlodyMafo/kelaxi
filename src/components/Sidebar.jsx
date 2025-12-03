@@ -157,7 +157,7 @@ export default function Sidebar() {
 
           <li>
             <NavLink
-              to="/logout"
+              to="/"
               className={({ isActive }) =>
                 `flex items-center gap-3 p-2 rounded duration-110 ${
                   isActive
